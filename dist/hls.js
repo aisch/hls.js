@@ -3796,8 +3796,8 @@ var Hls = (function () {
     key: 'destroy',
     value: function destroy() {
       _utilsLogger.logger.log('destroy');
-      this.detachMedia();
       this.trigger(_events2['default'].DESTROYING);
+      this.detachMedia();
       this.playlistLoader.destroy();
       this.fragmentLoader.destroy();
       this.levelController.destroy();
@@ -4321,9 +4321,10 @@ var PlaylistLoader = (function () {
           cc = 0,
           frag,
           byteRangeEndOffset,
-          byteRangeStartOffset;
+          byteRangeStartOffset,
+          programDateTime = null;
       var levelkey = { method: null, key: null, iv: null, uri: null };
-      regexp = /(?:#EXT-X-(MEDIA-SEQUENCE):(\d+))|(?:#EXT-X-(TARGETDURATION):(\d+))|(?:#EXT-X-(KEY):(.*))|(?:#EXT(INF):([\d\.]+)[^\r\n]*([\r\n]+[^#|\r\n]+)?)|(?:#EXT-X-(BYTERANGE):([\d]+[@[\d]*)]*[\r\n]+([^#|\r\n]+)?|(?:#EXT-X-(ENDLIST))|(?:#EXT-X-(DIS)CONTINUITY))/g;
+      regexp = /(?:#EXT-X-(MEDIA-SEQUENCE):(\d+))|(?:#EXT-X-(TARGETDURATION):(\d+))|(?:#EXT-X-(KEY):(.*))|(?:#EXT(INF):([\d\.]+)[^\r\n]*([\r\n]+[^#|\r\n]+)?)|(?:#EXT-X-(BYTERANGE):([\d]+[@[\d]*)]*[\r\n]+([^#|\r\n]+)?|(?:#EXT-X-(ENDLIST))|(?:#EXT-X-(DIS)CONTINUITY))|(?:#EXT-X-(PROGRAM-DATE-TIME):(.*))/g;
       while ((result = regexp.exec(string)) !== null) {
         result.shift();
         result = result.filter(function (n) {
@@ -4372,9 +4373,10 @@ var PlaylistLoader = (function () {
               } else {
                 fragdecryptdata = levelkey;
               }
-              level.fragments.push({ url: result[2] ? this.resolve(result[2], baseurl) : null, duration: duration, start: totalduration, sn: sn, level: id, cc: cc, byteRangeStartOffset: byteRangeStartOffset, byteRangeEndOffset: byteRangeEndOffset, decryptdata: fragdecryptdata });
+              level.fragments.push({ url: result[2] ? this.resolve(result[2], baseurl) : null, duration: duration, start: totalduration, sn: sn, level: id, cc: cc, byteRangeStartOffset: byteRangeStartOffset, byteRangeEndOffset: byteRangeEndOffset, decryptdata: fragdecryptdata, programDateTime: programDateTime });
               totalduration += duration;
               byteRangeStartOffset = null;
+              programDateTime = null;
             }
             break;
           case 'KEY':
@@ -4405,6 +4407,9 @@ var PlaylistLoader = (function () {
                 }
               }
             }
+            break;
+          case 'PROGRAM-DATE-TIME':
+            programDateTime = new Date(Date.parse(result[1]));
             break;
           default:
             break;
